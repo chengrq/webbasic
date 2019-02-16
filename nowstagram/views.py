@@ -115,3 +115,26 @@ def logout():
     logout_user()
     return redirect('/')
 
+def save_to_local(file,file_name):
+    save_dir = app.config['UPLOAD_DIR']
+    file.save(os.path.join(save_dir, file_name))
+    return '/image/'+file_name
+
+@app.route('/image/<image_name>')
+def view_image(image_name):
+    return send_from_directory(app.config['UPLOAD_DIR'],image_name)
+    
+
+@app.route('/upload',methods={"post"})
+def upload():
+    file = request.files['file']
+    if file.filename.find('.') > 0:
+        file_ext = file.filename.rsplit('.', 1)[1].strip().lower()
+    if file_ext in app.config['ALLOWED_EXT']:
+        file_name = str(uuid.uuidl()).replace('-','')+'.'+file_ext
+        url = save_to_local(file,file_name)
+        if url != None:
+            db.session.add(Image(url, current_user.id))
+            db.session.commit()
+
+    return redirect('/profile/%d'%current_user.id)
